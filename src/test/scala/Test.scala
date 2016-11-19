@@ -1,7 +1,5 @@
 import java.time.{ ZonedDateTime, ZoneId }
 
-import Main._
-
 import icalendar.ical.Writer._
 
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
@@ -12,22 +10,22 @@ import net.ruippeixotog.scalascraper.dsl.DSL.Parse._
 
 import org.scalatest._
 
-class Test extends WordSpec with Matchers {
-  val browser = JsoupBrowser()
-
+class Test extends WordSpec with Main with Matchers {
   "The HTML scraping algorithm" should {
-    "correctly find links in programma.html" in {
-      val doc = browser.parseResource("/programma.html")
-      val links = Main.links(doc)
-      links.size should be(8)
+    "correctly find links in agenda.html" in {
+      val doc = browser.parseResource("/index.html")
+      val urls = links(doc)
+      urls.size should be(46)
+      urls(0) should be("http://burgerweeshuis.nl/agenda/4379-Russkaja")
+      urls(1) should be("http://burgerweeshuis.nl/agenda/4431-Giant-Tiger-Hooch")
     }
 
     "correctly convert a details page to an event" in {
-      val doc = browser.parseResource("/draai_het_eens_om.html")
-      val event = Main.parseEvent("http://www.deventerschouwburg.nl/programma/1869/nuhr/draai_het_eens_om", doc)
-      event.uid.value.text should equal("deventerschouwburg2ical-1869")
-      event.summary.get.value.text should equal("Draai het eens om - NUHR")
-      event.dtstart.get.value.dt should equal(ZonedDateTime.of(2016, 10, 19, 20, 0, 0, 0, ZoneId.of("Europe/Amsterdam")))
+      val doc = browser.parseResource("/morphine.html")
+      val event = parseEvent("http://burgerweeshuis.nl/agenda/4507-Morphine", doc)
+      event.uid.value.text should equal("bwh2ical-4507")
+      event.summary.get.value.text should equal("Morphine - Vapors of")
+      event.dtstart.get.value.dt should equal(ZonedDateTime.of(2016, 11, 17, 21, 0, 0, 0, ZoneId.of("Europe/Amsterdam")))
     }
   }
 }
