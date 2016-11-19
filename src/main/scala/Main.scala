@@ -76,7 +76,10 @@ trait Main {
   def fetchIndex(url: URL): Future[List[Event]] =
     fetchDocument(url)
       .map(links)
-      .flatMap(links => Future.sequence(links.map(fetchDetails)))
+      .flatMap(links => Future.sequence(
+        links.map(link =>
+          fetchDetails(link)
+            .recoverWith { case t => Future.failed(new IllegalStateException(s"Failed to get details for $link: ${t.getMessage}", t)) } )))
 
   def events() = Await.result(fetchIndex(url), 20 seconds)
 
