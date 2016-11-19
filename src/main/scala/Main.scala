@@ -1,5 +1,6 @@
 import java.time.{ ZonedDateTime, ZoneId, ZoneOffset }
 import java.io.{ InputStream, OutputStream }
+import java.net.URL
 
 import scala.language.{ postfixOps, implicitConversions }
 
@@ -22,8 +23,8 @@ import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
 trait Main {
   implicit def liftOption[T](value: T): Option[T] = Some(value)
 
-  def links(doc: Document): List[String] =
-    (doc >> element("ul#event") >> elementList("li")).map(_ >> attr("href")("a"))
+  def links(doc: Document): List[URL] =
+    (doc >> element("ul#event") >> elementList("li")).map(_ >> attr("href")("a")).map(new URL(_))
 
   def parseMonth(monthString: String): Int = monthString match {
     case "januari" => 1
@@ -48,8 +49,8 @@ trait Main {
     }
   }
 
-  def parseEvent(link: String, doc: Document): Event = {
-    val id = ".*/agenda/(\\d+)".r.findFirstMatchIn(link).get.group(1)
+  def parseEvent(link: URL, doc: Document): Event = {
+    val id = ".*/agenda/(\\d+)".r.findFirstMatchIn(link.toString).get.group(1)
     val summary = (doc >> text(".event_title")) +
       " - " + (doc >> element(".event_sub_title") >> elementList(".word")).map(text(_)).reduce(_ + " " + _)
     val description = (doc >> elementList("#sub_col_right p")).map(text(_)).reduce(_ + "\n\n" + _)
@@ -58,26 +59,26 @@ trait Main {
       dtstart = Dtstart(parseDate(doc >> attr("content")("meta[property=\"og:title\"]"))),
       summary = Summary(summary),
       description = Description(description),
-      url = Url(link)
+      url = link
     )
   }
 
-  val domain = "http://burgerweeshuis.nl/"
+  val url = new URL("http://burgerweeshuis.nl/")
   val browser = JsoupBrowser()
 
-  def fetchDetails(url: String): Future[Event] =
+  def fetchDetails(url: URL): Future[Event] =
     fetchDocument(url).map(doc => parseEvent(url, doc))
 
-  def fetchDocument(url: String): Future[Document] = Future {
-    browser.get(url)
+  def fetchDocument(url: URL): Future[Document] = Future {
+    browser.get(url.toString)
   }
 
-  def fetchIndex(url: String): Future[List[Event]] =
+  def fetchIndex(url: URL): Future[List[Event]] =
     fetchDocument(url)
       .map(links)
-      .flatMap(links => Future.sequence(links.map(domain + _).map(fetchDetails)))
+      .flatMap(links => Future.sequence(links.map(fetchDetails)))
 
-  def events() = Await.result(fetchIndex(domain), 20 seconds)
+  def events() = Await.result(fetchIndex(url), 20 seconds)
 
   def fetchCalendar(): String = asIcal(Calendar(
     prodid = Prodid("-//raboof/bwh2ical//NONSGML v1.0//NL"),
