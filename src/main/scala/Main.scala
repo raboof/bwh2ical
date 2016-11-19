@@ -51,8 +51,9 @@ trait Main {
 
   def parseEvent(link: URL, doc: Document): Event = {
     val id = ".*/agenda/(\\d+)".r.findFirstMatchIn(link.toString).get.group(1)
-    val summary = (doc >> text(".event_title")) +
-      " - " + (doc >> element(".event_sub_title") >> elementList(".word")).map(text(_)).reduce(_ + " " + _)
+    val subtitle = (doc >> element(".event_sub_title") >> elementList(".word")).map(text(_)).reduceOption(_ + " " + _)
+    val title = (doc >> element(".event_title") >> elementList(".word")).map(text(_)).reduce(_ + " " + _)
+    val summary = title + subtitle.map(" - " + _).getOrElse("")
     val description = (doc >> elementList("#sub_col_right p")).map(text(_)).reduce(_ + "\n\n" + _)
     Event(
       uid = Uid(s"bwh2ical-$id"),

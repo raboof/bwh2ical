@@ -28,5 +28,13 @@ class Test extends WordSpec with Main with Matchers {
       event.summary.get.value.text should equal("Morphine - Vapors of")
       event.dtstart.get.value.dt should equal(ZonedDateTime.of(2016, 11, 17, 21, 0, 0, 0, ZoneId.of("Europe/Amsterdam")))
     }
+
+    "correctly convert a details page for an event without subtitle" in {
+      val doc = browser.parseResource("/4517-John-Mark-Nelson.html")
+      val event = parseEvent(new URL("http://burgerweeshuis.nl/agenda/4517-John-Mark-Nelson"), doc)
+      event.uid.value.text should equal("bwh2ical-4517")
+      event.summary.get.value.text should equal("John Mark Nelson")
+      event.dtstart.get.value.dt should equal(ZonedDateTime.of(2016, 11, 23, 21, 0, 0, 0, ZoneId.of("Europe/Amsterdam")))
+    }
   }
 }
