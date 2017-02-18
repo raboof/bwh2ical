@@ -1,3 +1,5 @@
+resolvers += Resolver.sonatypeRepo("public")
+
 scalacOptions := Seq("-feature", "-deprecation")
 
 scalaVersion := "2.11.8"
