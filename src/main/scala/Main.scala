@@ -24,7 +24,10 @@ trait Main {
   implicit def liftOption[T](value: T): Option[T] = Some(value)
 
   def links(doc: Document): List[URL] =
-    (doc >> element("ul#event") >> elementList("li")).map(_ >> attr("href")("a")).map(new URL(_))
+    (doc >> element("ul#event") >> elementList("li"))
+      .map(_ >> attr("href")("a"))
+      .filter(_.startsWith("http"))
+      .map(new URL(_))
 
   def parseMonth(monthString: String): Int = monthString match {
     case "januari" => 1
