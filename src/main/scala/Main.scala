@@ -13,6 +13,7 @@ import icalendar.Properties._
 import icalendar.CalendarProperties._
 import icalendar.ical.Writer._
 
+import dispatch.Http
 
 import net.ruippeixotog.scalascraper.model._
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
@@ -73,8 +74,9 @@ trait Main {
   def fetchDetails(url: URL): Future[Event] =
     fetchDocument(url).map(doc => parseEvent(url, doc))
 
-  def fetchDocument(url: URL): Future[Document] = Future {
-    browser.get(url.toString)
+  def fetchDocument(url: URL): Future[Document] = {
+    println(s"Register fetching $url")
+    Http(dispatch.url(url.toString) OK dispatch.as.String).map(str => { println(s"Done fetching $url"); browser.parseString(str) })
   }
 
   def fetchIndex(url: URL): Future[List[Event]] =
@@ -100,4 +102,5 @@ class MainLambda extends Main {
 
 object MainApp extends App with Main {
   print(fetchCalendar())
+  Http.shutdown()
 }
