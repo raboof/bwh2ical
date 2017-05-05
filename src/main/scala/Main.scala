@@ -60,7 +60,7 @@ trait Main {
     val description = (doc >> elementList("#sub_col_right p")).map(text(_)).reduce(_ + "\n\n" + _)
     Event(
       uid = Uid(s"bwh2ical-$id"),
-      dtstart = Dtstart(parseDate(doc >> attr("content")("meta[property=\"og:title\"]"))),
+      dtstart = parseDate(doc >> attr("content")("meta[property=\"og:title\"]")),
       summary = Summary(summary),
       description = Description(description),
       url = link
