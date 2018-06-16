@@ -1,40 +1,28 @@
-import java.time.{ ZonedDateTime, ZoneId }
+import java.time.{ZoneId, ZonedDateTime}
 import java.net.URL
 
+import akka.stream.scaladsl.{Sink, Source, StreamConverters}
 import icalendar.ical.Writer._
-
-import net.ruippeixotog.scalascraper.browser.JsoupBrowser
-
-import net.ruippeixotog.scalascraper.dsl.DSL._
-import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
-import net.ruippeixotog.scalascraper.dsl.DSL.Parse._
-
 import org.scalatest._
 
-class Test extends WordSpec with Main with Matchers {
-  "The HTML scraping algorithm" should {
-    "correctly find links in agenda.html" in {
-      val doc = browser.parseResource("/index.html")
-      val urls = links(doc)
-      urls.size should be(46)
-      urls(0) should be(new URL("http://burgerweeshuis.nl/agenda/4379-Russkaja"))
-      urls(1) should be(new URL("http://burgerweeshuis.nl/agenda/4431-Giant-Tiger-Hooch"))
-    }
+import scala.concurrent.duration._
 
-    "correctly convert a details page to an event" in {
-      val doc = browser.parseResource("/morphine.html")
-      val event = parseEvent(new URL("http://burgerweeshuis.nl/agenda/4507-Morphine"), doc)
-      event.uid.value.text should equal("bwh2ical-4507")
-      event.summary.get.value.text should equal("Morphine - Vapors of")
-      event.dtstart.get.value.value.left.get.dt should equal(ZonedDateTime.of(2016, 11, 17, 21, 0, 0, 0, ZoneId.of("Europe/Amsterdam")))
-    }
+import scala.concurrent.Await
 
-    "correctly convert a details page for an event without subtitle" in {
-      val doc = browser.parseResource("/4517-John-Mark-Nelson.html")
-      val event = parseEvent(new URL("http://burgerweeshuis.nl/agenda/4517-John-Mark-Nelson"), doc)
-      event.uid.value.text should equal("bwh2ical-4517")
-      event.summary.get.value.text should equal("John Mark Nelson")
-      event.dtstart.get.value.value.left.get.dt should equal(ZonedDateTime.of(2016, 11, 23, 21, 0, 0, 0, ZoneId.of("Europe/Amsterdam")))
+class Test extends WordSpec with Main with Matchers with BeforeAndAfterAll {
+  "The JSON scraping algorithm" should {
+    "parse the example json" in {
+      val events = Await.result(StreamConverters.fromInputStream(() => classOf[Test].getResourceAsStream("/events.json"))
+        .via(parse)
+        .runWith(Sink.seq), 10.seconds)
+      println(asIcal(events(0)))
+      events.length should be(40)
     }
   }
+
+  override protected def afterAll() = {
+    system.terminate()
+    super.afterAll()
+  }
+
 }
